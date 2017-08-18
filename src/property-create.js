@@ -1,37 +1,37 @@
-const readline = require('readline');
-var request = require('request');
-var fs = require('fs');
-var sleep = require('sleep'); 
+const readline = require("readline");
+var request = require("request");
+var fs = require("fs");
+var sleep = require("sleep");
 
 var fd;
-var apiFilePath = './apikey.txt';
+var apiFilePath = "./apikey.txt";
 
 let EMAIL;
 let TOKEN;
 let APIKEY;
 let ENV = {
-  ATM_API_BASE: 'https://api.adtechmedia.io/v1',
-  ATM_WWW_BASE: 'https://www.adtechmedia.io',
+  ATM_API_BASE: "https://api.adtechmedia.io/v1",
+  ATM_WWW_BASE: "https://www.adtechmedia.io"
 };
 
 function rageQuit(message) {
-  console.log('\x1b[31m%s\x1b[0m', message);
+  console.log("\x1b[31m%s\x1b[0m", message);
 
   process.exit(1);
 }
 
 function sucessQuit(message) {
-  console.log('\x1b[32m%s\x1b[0m', message);
+  console.log("\x1b[32m%s\x1b[0m", message);
 
   process.exit(2);
 }
 
 function log(message) {
-	console.log('\x1b[33m%s\x1b[0m', message);
+  console.log("\x1b[33m%s\x1b[0m", message);
 }
 
 function errMsg(message) {
-	console.log('\x1b[31m%s\x1b[0m', message);
+  console.log("\x1b[31m%s\x1b[0m", message);
 }
 
 function setEmail(email) {
@@ -41,14 +41,14 @@ function setEmail(email) {
 }
 
 function setEnv(env) {
-  if(!env || env === 'PROD') {
+  if (!env || env === "PROD") {
     return;
   }
 
-  ENV.ATM_API_BASE = `https://api-${env.toLowerCase()}.adtechmedia.io/v1`;
-  ENV.ATM_WWW_BASE = `https://www-${env.toLowerCase()}.adtechmedia.io`;
-  log(`Enviroment was set to ${env.toLowerCase()}`);
-  checkIfApiValid(propertyCreate); 
+  ENV.ATM_API_BASE = `https://api-${env}.adtechmedia.io/v1`;
+  ENV.ATM_WWW_BASE = `https://www-${env}.adtechmedia.io`;
+  log(`Enviroment was set to ${env}`);
+  checkIfApiValid(propertyCreate);
 }
 
 const rl = readline.createInterface({
@@ -57,15 +57,14 @@ const rl = readline.createInterface({
 });
 
 function askEmail(cb) {
-  if( process.argv[2] ) {
+  if (process.argv[2]) {
     cb(process.argv[2]);
     return;
   }
-  
 
-  rl.question('Your Email? ', (answer) => {
-    if(!answer) {
-      rageQuit('You should introduce your email!');
+  rl.question("Your Email? ", answer => {
+    if (!answer) {
+      rageQuit("You should introduce your email!");
     }
 
     cb(answer);
@@ -73,25 +72,25 @@ function askEmail(cb) {
 }
 
 function askENV(cb) {
-  if( process.argv[3] ) {
-    cb(process.argv[3]);
+  if (process.argv[3]) {
+    cb(process.argv[3].toLowerCase());
     return;
   }
 
-  rl.question('Enviroment? ', (answer) => {
-    if(!answer) {
-      answer = 'prod';
+  rl.question("Enviroment? ", answer => {
+    if (!answer) {
+      answer = "prod";
     }
-    answer = answer.toUpperCase();
+    answer = answer.toLowerCase();
 
     cb(answer);
   });
 }
 
 function askToken() {
-  rl.question('Token ( copy from email ): ', (answer) => {
-    if(!answer) {
-      rageQuit('No token provided!');
+  rl.question("Token ( copy from email ): ", answer => {
+    if (!answer) {
+      rageQuit("No token provided!");
     }
 
     setToken(answer);
@@ -100,7 +99,7 @@ function askToken() {
 }
 
 function propertyCreate() {
-  log('Trying to create property. (It may take a while)');
+  log("Trying to create property. (It may take a while)");
   const DATA = `
   {
     "Name": "Generated Property - ${EMAIL}",
@@ -121,53 +120,61 @@ function propertyCreate() {
   }`;
 
   const options = {
-    method: 'PUT',
+    method: "PUT",
     url: `${ENV.ATM_API_BASE}/atm-admin/property/create`,
     body: DATA,
     headers: {
-      'X-Api-Key': `${APIKEY}`,
-      'Content-Type': 'application/json',
-    },
-  }
+      "X-Api-Key": `${APIKEY}`,
+      "Content-Type": "application/json"
+    }
+  };
 
   tryPropertyCreate(options, tryPropertyCreate);
 }
 
 function tryPropertyCreate(options, callback) {
-  request(options, (err,res,body) => {
+  request(options, (err, res, body) => {
     var response;
     try {
-      response = JSON.parse(body).message;
-    } catch(e) {
-      rageQuit('Property create failed!\nDoes the enviroment exists?!\nDo you have internet connection?!');
-    }
-    
-    if(err){
+      response = JSON.parse(body).Message;
+      if (response !== undefined) {
+        throw Error(response);
+      }
+    } catch (err) {
+      if (err.toString().indexOf("SyntaxError") > -1) {
+        rageQuit(
+          "Property create failed!\nMost possible you dont have internet connection or Enviroment doesnt exist?!\n"
+        );
+      }
       rageQuit(err);
     }
 
-    if(response === 'Forbidden') {
-      errMsg('Property Create failed, retrying!');
+    if (err) {
+      rageQuit(err);
+    }
+
+    if (response === "Forbidden") {
+      errMsg("Property Create failed, retrying!");
       callback(options, tryPropertyCreate);
     } else {
-      sucessQuit('Property has been successfully created!'); 
+      sucessQuit("Property has been successfully created!");
     }
   });
 }
 
 function checkIfApiValid(cb) {
-  log('Checking if saved API is valid');
+  log("Checking if saved API is valid");
   fs.readFile(apiFilePath, function read(err, data) {
     if (err) {
-      log('Invalid apikey creating new one!');
+      log("Invalid apikey creating new one!");
       sendToken(askToken);
     } else {
-      textData = data.toString('utf8');
-      
+      textData = data.toString("utf8");
+
       try {
         const err = JSON.parse(textData);
         fs.unlink(apiFilePath);
-        log('Invalid apikey creating new one!');
+        log("Invalid apikey creating new one!");
         sendToken(askToken);
       } catch (e) {
         if (textData.length < 10) {
@@ -175,7 +182,7 @@ function checkIfApiValid(cb) {
         } else {
           APIKEY = textData;
 
-        cb();
+          cb();
         }
       }
     }
@@ -190,8 +197,8 @@ function setToken(token) {
 }
 
 function sendToken(cb) {
-  log('Sending token');
-  
+  log("Sending token");
+
   const DATA = JSON.parse(`
   { 
     "Email" : "${EMAIL}", 
@@ -199,21 +206,21 @@ function sendToken(cb) {
   }`);
 
   const options = {
-    method: 'PUT',
+    method: "PUT",
     url: `${ENV.ATM_API_BASE}/deep-account/client/token-send`,
     body: DATA,
     json: true,
     headers: {
-      'Content-Type': 'application/json',
-    },
-  }
+      "Content-Type": "application/json"
+    }
+  };
 
-  request(options, (err,res,body) => {
-    if(err){
+  request(options, (err, res, body) => {
+    if (err) {
       rageQuit(err);
     }
 
-    textBody = body.toString('utf8');
+    textBody = body.toString("utf8");
 
     try {
       rageQuit(JSON.parse(res.body.errorMessage).errorMessage);
@@ -230,27 +237,27 @@ function sendToken(cb) {
 }
 
 function tokenExchange(cb) {
-  log('Exchanging token');
+  log("Exchanging token");
   var qsOptions = {
     Email: EMAIL,
-    TempToken: TOKEN,
-  }
+    TempToken: TOKEN
+  };
 
   const options = {
-    method: 'GET',
+    method: "GET",
     url: `${ENV.ATM_API_BASE}/deep-account/client/token-exchange`,
-    qs: qsOptions,
-  }
+    qs: qsOptions
+  };
 
-  request(options, (err,res,body) => {
-    if(err){
+  request(options, (err, res, body) => {
+    if (err) {
       rageQuit(err);
     }
-    
+
     try {
       let msg = JSON.parse(body).message;
-      if(msg !== undefined || JSON.parse(body).apiKey === undefined ) {
-        rageQuit('Could not extract api key, maybe token is expired!');
+      if (msg !== undefined || JSON.parse(body).apiKey === undefined) {
+        rageQuit("Could not extract api key, maybe token is expired!");
       } else {
         cb(JSON.parse(body).apiKey, propertyCreate);
       }
@@ -270,7 +277,7 @@ function setApi(apiKey, cb) {
 askEmail(setEmail);
 
 function write(buffer) {
-   fs.truncate(apiFilePath, 0, function() {
-	fs.writeFileSync(apiFilePath, buffer);
-   })
+  fs.truncate(apiFilePath, 0, function() {
+    fs.writeFileSync(apiFilePath, buffer);
+  });
 }
