@@ -146,7 +146,9 @@ function tryPropertyCreate(options, callback) {
           "Property create failed!\nMost possible you dont have internet connection or Enviroment doesnt exist?!\n"
         );
       }
-      rageQuit(err);
+      log("Invalid apikey creating new one!");
+      sendToken(askToken);
+      return;
     }
 
     if (err) {
