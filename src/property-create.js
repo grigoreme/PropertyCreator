@@ -270,7 +270,7 @@ function setApi(apiKey, cb) {
 askEmail(setEmail);
 
 function write(buffer) {
-	fs.truncate(apiFilePath, 0, function(){
-		fs.writeFileSync(apiFilePath, buffer);
-	})
+   fs.truncate(apiFilePath, 0, function() {
+	fs.writeFileSync(apiFilePath, buffer);
+   })
 }
