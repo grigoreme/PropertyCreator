@@ -135,7 +135,13 @@ function propertyCreate() {
 
 function tryPropertyCreate(options, callback) {
   request(options, (err,res,body) => {
-    response = JSON.parse(body).message;
+    var response;
+    try {
+      response = JSON.parse(body).message;
+    } catch(e) {
+      rageQuit('Property create failed!\nDoes the enviroment exists?!\nDo you have internet connection?!');
+    }
+    
     if(err){
       rageQuit(err);
     }
