@@ -1,7 +1,7 @@
 const readline = require("readline");
 var request = require("request");
 var fs = require("fs");
-var sleep = require("sleep");
+var sleep = require('system-sleep');
 
 var fd;
 var apiFilePath = "./apikey.txt";
@@ -133,12 +133,14 @@ function propertyCreate() {
 }
 
 function tryPropertyCreate(options, callback) {
+  sleep(3500);
   request(options, (err, res, body) => {
     var response;
     try {
-      response = JSON.parse(body).Message;
-      if (response !== undefined) {
-        throw Error(response);
+      responseError = JSON.parse(body).Message;
+      response = JSON.parse(body).message;
+      if (responseError !== undefined) {
+        throw Error(responseError);
       }
     } catch (err) {
       if (err.toString().indexOf("SyntaxError") > -1) {
