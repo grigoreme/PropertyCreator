@@ -57,6 +57,12 @@ const rl = readline.createInterface({
 });
 
 function askEmail(cb) {
+  if( process.argv[2] ) {
+    cb(process.argv[2]);
+    return;
+  }
+  
+
   rl.question('Your Email? ', (answer) => {
     if(!answer) {
       rageQuit('You should introduce your email!');
@@ -67,6 +73,11 @@ function askEmail(cb) {
 }
 
 function askENV(cb) {
+  if( process.argv[3] ) {
+    cb(process.argv[3]);
+    return;
+  }
+
   rl.question('Enviroment? ', (answer) => {
     if(!answer) {
       answer = 'prod';
