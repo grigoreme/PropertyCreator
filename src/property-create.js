@@ -3,7 +3,7 @@ var request = require("request");
 var fs = require("fs");
 var sleep = require("sleep");
 
-var fd;
+var helper = require("./status.helper");
 var apiFilePath = "./apikey.txt";
 
 let EMAIL;
@@ -14,10 +14,10 @@ let ENV = {
   ATM_WWW_BASE: "https://www.adtechmedia.io"
 };
 
-function rageQuit(message) {
-  console.log("\x1b[31m%s\x1b[0m", message);
+function rageQuit(error) {
+  console.log("\x1b[31m%s\nProcess exit with code: %d\x1b[0m", error.msg, error.code);
 
-  process.exit(1);
+  process.exit(error.code);
 }
 
 function sucessQuit(message) {
@@ -64,7 +64,7 @@ function askEmail(cb) {
 
   rl.question("Your Email? ", answer => {
     if (!answer) {
-      rageQuit("You should introduce your email!");
+      rageQuit(helper.noEmail);
     }
 
     cb(answer);
@@ -90,7 +90,7 @@ function askENV(cb) {
 function askToken() {
   rl.question("Token ( copy from email ): ", answer => {
     if (!answer) {
-      rageQuit("No token provided!");
+      rageQuit(helper.noToken);
     }
 
     setToken(answer);
@@ -142,9 +142,7 @@ function tryPropertyCreate(options, callback) {
       }
     } catch (err) {
       if (err.toString().indexOf("SyntaxError") > -1) {
-        rageQuit(
-          "Property create failed!\nMost possible you dont have internet connection or Enviroment doesnt exist?!\n"
-        );
+        rageQuit(helper.propertySyntaxErr);
       }
       log("Invalid apikey creating new one!");
       sendToken(askToken);
@@ -152,7 +150,7 @@ function tryPropertyCreate(options, callback) {
     }
 
     if (err) {
-      rageQuit(err);
+      rageQuit(helper.runtimeErr(err));
     }
 
     if (response === "Forbidden") {
@@ -219,18 +217,19 @@ function sendToken(cb) {
 
   request(options, (err, res, body) => {
     if (err) {
-      rageQuit(err);
+      rageQuit(helper.runtimeErr(err));
     }
 
     textBody = body.toString("utf8");
 
     try {
-      rageQuit(JSON.parse(res.body.errorMessage).errorMessage);
+      const err = JSON.parse(res.body.errorMessage).errorMessage;
+      rageQuit(helper.runtimeErr(err));
     } catch (e) {
       // no error found
       try {
         const err = JSON.parse(textBody);
-        rageQuit(textBody.errorMessage);
+        rageQuit(helper.runtimeErr(textBody.errorMessage));
       } catch (e) {
         cb();
       }
@@ -253,13 +252,13 @@ function tokenExchange(cb) {
 
   request(options, (err, res, body) => {
     if (err) {
-      rageQuit(err);
+      rageQuit(helper.runtimeErr(err));
     }
 
     try {
       let msg = JSON.parse(body).message;
       if (msg !== undefined || JSON.parse(body).apiKey === undefined) {
-        rageQuit("Could not extract api key, maybe token is expired!");
+        rageQuit(helper.tokenExpired);
       } else {
         cb(JSON.parse(body).apiKey, propertyCreate);
       }
