@@ -10,6 +10,6 @@
   "license": "ISC",
   "devDependencies": {
     "request": "^2.81.0",
-    "sleep": "^5.1.1"
+    "system-sleep": "^1.3.5"
   }
 }

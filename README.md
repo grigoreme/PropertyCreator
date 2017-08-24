@@ -9,4 +9,5 @@ Simple property creator for ATM-Manager;
 ## Steps to use
 1. Navigate to `src` folder
 2. Execute `npm install`
-3. Execute `node property-create.js`
+3. Execute `node property-create.js` or `node property-create.js [email] [env]`<br>
+(example: `node property-create.js habib@gmail.com test`)
