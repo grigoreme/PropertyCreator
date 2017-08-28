@@ -1,10 +1,9 @@
 const readline = require("readline");
-var request = require("request");
-var fs = require("fs");
-var sleep = require('system-sleep');
-
-var helper = require("./status.helper");
-var apiFilePath = "./apikey.txt";
+const request = require("request");
+const fs = require("fs");
+const sleep = require('system-sleep');
+const helper = require("./status.helper");
+const apiFilePath = "./apikey.txt";
 
 let EMAIL;
 let TOKEN;
@@ -94,7 +93,6 @@ function askToken() {
     }
 
     setToken(answer);
-    rl.close();
   });
 }
 
@@ -171,18 +169,40 @@ function checkIfApiValid(cb) {
       log("Invalid apikey creating new one!");
       sendToken(askToken);
     } else {
-      textData = data.toString("utf8");
-
+      textData = data.toString("utf8").split("|");
+      
       try {
         const err = JSON.parse(textData);
         fs.unlink(apiFilePath);
         log("Invalid apikey creating new one!");
         sendToken(askToken);
       } catch (e) {
-        if (textData.length < 10) {
+        if (textData[0].length < 10) {
           sendToken(askToken);
         } else {
-          APIKEY = textData;
+          APIKEY = textData[0];
+          if(textData[1].toString() !== EMAIL.toString()){
+            log(`Email you provide (${EMAIL}) doesnt match to email saved (${textData[1]})`);
+
+            rl.question("Want to use old email? (Y/N): ", answer => {
+              if (!answer) {
+                rageQuit(helper.noEmail);
+              }
+
+              if(answer.toLowerCase() === 'y' || answer.toLowerCase() === "yes") {
+                EMAIL = textData[1].toString();
+                log(`Email set back to ${EMAIL}`);
+                checkIfApiValid(cb);
+              } else {
+                log('Reset email');
+                fs.unlink(apiFilePath, function() {
+                  checkIfApiValid(cb);
+                })
+              }
+            });
+
+            return;
+          }
 
           cb();
         }
@@ -273,7 +293,7 @@ function tokenExchange(cb) {
 function setApi(apiKey, cb) {
   APIKEY = apiKey;
   log(`ApiKey was set to ${apiKey}`);
-  write(apiKey);
+  write(`${apiKey}|${EMAIL}`);
   cb();
 }
 
